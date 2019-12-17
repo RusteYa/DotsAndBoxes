@@ -1,0 +1,8 @@
+.stack-work/
+DotsAndBoxes.cabal
+*~
+# Project exclude paths
+/out/
+
+.idea/
+.idea

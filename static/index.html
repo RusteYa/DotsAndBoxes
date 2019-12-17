@@ -1,0 +1,56 @@
+<html>
+<head>
+    <title>Servant: counter</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        #inc {
+            margin: 0px 20px;
+            background-color: green;
+            color: white;
+        }
+    </style>
+</head>
+<html>
+<span id="state">State: 0</span>
+<button id="inc">change</button>
+<label id="label" for="field"></label>
+<form id="form">
+    <input name="name" id="field" type="text"/>
+    <button type="submit">submit</button>
+</form>
+
+<script src="jquery.min.js" type="text/javascript"></script>
+<script src="stateApi.js" type="text/javascript"></script>
+<script src="userApi.js" type="text/javascript"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        getState(updateState, alert);
+
+        window.setInterval(function () {
+            getState(updateState, alert);
+        }, 1000);
+    });
+
+    function updateState(response) {
+        $('#state').html('state: ' + response.value);
+    }
+
+    $('#inc').click(function () {
+        postState(updateState, alert);
+    });
+
+    $('#form').submit(function () {
+        let user = {
+            name: $('#field').val(),
+        };
+        postUser(user, function f(response) {
+            $('#label').text(response.name);
+        }, alert);
+        return false;
+    });
+</script>
+</body>
+</html>
