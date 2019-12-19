@@ -22,17 +22,25 @@
     <button type="submit">submit</button>
 </form>
 
+<div id="users"></div>
+
+<form id="playForm">
+    <label id="game" for="opname"></label>
+    <input name="opname" id="opname" type="text"/>
+    <button type="play">play</button>
+</form>
+
 <script src="jquery.min.js" type="text/javascript"></script>
 <script src="stateApi.js" type="text/javascript"></script>
 <script src="userApi.js" type="text/javascript"></script>
 <script type="text/javascript">
-    $(document).ready(function () {
-        getState(updateState, alert);
-
-        window.setInterval(function () {
-            getState(updateState, alert);
-        }, 1000);
-    });
+    // $(document).ready(function () {
+    //     getState(updateState, alert);
+    //
+    //     window.setInterval(function () {
+    //         getState(updateState, alert);
+    //     }, 1000);
+    // });
 
     function updateState(response) {
         $('#state').html('state: ' + response.value);
@@ -43,11 +51,34 @@
     });
 
     $('#form').submit(function () {
-        let user = {
-            name: $('#field').val(),
+        let username = $('#field').val();
+        postUser(username, function f(response) {
+            console.log(response);
+
+            var list = '';
+            var arr = response.users;
+            arr.forEach(function(item) {
+                if (item.name !== username) {
+                    list += '<li>' + item.name + '</li>';
+                }
+            });
+
+            document.getElementById('users').innerHTML += '<ul>' + list + '</ul>';
+
+            $('#label').text(username);
+        }, alert);
+        return false;
+    });
+
+    $('#playForm').submit(function () {
+        let players = {
+            firstPlayerName: $('#label').val(),
+            secondPlayerName: $('#opname').val()
         };
-        postUser(user, function f(response) {
-            $('#label').text(response.name);
+        console.log(players);
+        postPlay(players, function f(response) {
+            console.log(response);
+            $('#game').text(response);
         }, alert);
         return false;
     });

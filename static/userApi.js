@@ -20,3 +20,15 @@ var getUser = function(onSuccess, onError)
     , type: 'GET'
     });
 }
+
+var postPlay = function(body, onSuccess, onError)
+{
+  $.ajax(
+    { url: '/play'
+    , success: onSuccess
+    , data: JSON.stringify(body)
+    , contentType: 'application/json'
+    , error: onError
+    , type: 'POST'
+    });
+}

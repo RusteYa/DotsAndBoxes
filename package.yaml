@@ -30,8 +30,7 @@ dependencies:
 - filepath
 - text
 - network
-- websockets
-- servant-websockets
+- uuid
 
 library:
   source-dirs: src
