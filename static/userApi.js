@@ -32,3 +32,15 @@ var postPlay = function(body, onSuccess, onError)
     , type: 'POST'
     });
 }
+
+var postGame = function(body, onSuccess, onError)
+{
+  $.ajax(
+    { url: '/game'
+    , success: onSuccess
+    , data: JSON.stringify(body)
+    , contentType: 'application/json'
+    , error: onError
+    , type: 'POST'
+    });
+}

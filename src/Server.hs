@@ -268,16 +268,16 @@ updateUser userPul gamePul username =
 initGameTwise :: User -> User -> Game
 initGameTwise u1 u2 = Game {pk = p, board = b, firstPlayer = u1, secondPlayer = u2}
   where
-    p = Data.Text.concat [name u1, name u2]
+    p = name u2
     b = "board"
 
 play :: MonadIO m => TVar UserPul -> TVar GamePul -> Players -> m Game
 play userPul gamePul players = traceShow ("play")
   liftIO . atomically $ do
-    oldUserPul <- readTVar userPul
+    oldUserPul <-  readTVar userPul
     --let u1 = Data.List.head (Data.List.filter (\e -> name e == firstPlayerName players) (users oldUserPul))
-    let u1 = traceShow ("play", u1) fromJust (Data.List.find (\e -> name e == firstPlayerName players) (users oldUserPul))
-    let u2 = traceShow ("play", u2) fromJust (Data.List.find (\e -> name e == secondPlayerName players) (users oldUserPul))
+    let u1 = traceShow ("play", firstPlayerName players) fromJust (Data.List.find (\e -> name e == firstPlayerName players) (users oldUserPul))
+    let u2 = traceShow ("play", firstPlayerName players) fromJust (Data.List.find (\e -> name e == secondPlayerName players) (users oldUserPul))
     oldGamePul <- readTVar gamePul
     let g = initGameTwise u1 u2
     writeTVar gamePul GamePul {games = g : games oldGamePul}
@@ -285,6 +285,13 @@ play userPul gamePul players = traceShow ("play")
     let newUserPul = UserPul {users = newUsers}
     writeTVar userPul newUserPul
     return g
+
+game :: MonadIO m => TVar GamePul -> Text -> m Game
+game gamePul username =
+  traceShow "game" liftIO . atomically $ do
+    oldGamePul <- readTVar gamePul
+    let g = Data.List.find (\e -> pk e == username) (games oldGamePul)
+    maybe (return Game {pk = "#", board="", firstPlayer=User {name=""}, secondPlayer=User {name=""}}) return g
 
 --initGame :: User -> Game
 --initGame u = traceShow ("initGame", u) Game {pk = "", firstPlayer = u}
@@ -299,6 +306,7 @@ type StateApi = "state" :> Post '[ JSON] State :<|> "state" :> Get '[ JSON] Stat
 
 type UserApi
    = "user" :> ReqBody '[ JSON] Text :> Post '[ JSON] UserPul :<|> "user" :> Get '[ JSON] UserPul :<|> "play" :> ReqBody '[ JSON] Players :> Post '[ JSON] Game
+   :<|> "game" :> ReqBody '[ JSON] Text :> Post '[ JSON] Game
 
 type ServerApi = StateApi :<|> UserApi :<|> Raw
 
@@ -318,7 +326,7 @@ stateServer :: TVar State -> Server StateApi
 stateServer state = updateState state :<|> currentState state
 
 userServer :: TVar UserPul -> TVar GamePul -> Server UserApi
-userServer userPul gamePul = updateUser userPul gamePul :<|> currentUser userPul gamePul :<|> play userPul gamePul
+userServer userPul gamePul = updateUser userPul gamePul :<|> currentUser userPul gamePul :<|> play userPul gamePul :<|> game gamePul
 
 server :: TVar State -> TVar UserPul -> TVar GamePul -> Server ServerApi
 server state userPul gamePul =

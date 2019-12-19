@@ -7,4 +7,4 @@ DotsAndBoxes.cabal
 .idea/
 .idea
 
-DotsAndBoxes.iml
+*.iml

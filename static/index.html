@@ -23,9 +23,8 @@
 </form>
 
 <div id="users"></div>
-
+<label id="game" for="opname"></label>
 <form id="playForm">
-    <label id="game" for="opname"></label>
     <input name="opname" id="opname" type="text"/>
     <button type="play">play</button>
 </form>
@@ -41,6 +40,20 @@
     //         getState(updateState, alert);
     //     }, 1000);
     // });
+    var username = "";
+
+
+    $(document).ready(function () {
+        window.setInterval(function () {
+            if (username !== "") {
+                postGame(username, function f(response) {
+                    console.log(response);
+                    if (response.pk !== "#")
+                        $('#game').text(response);
+                }, alert);
+            }
+        }, 1000);
+    });
 
     function updateState(response) {
         $('#state').html('state: ' + response.value);
@@ -51,7 +64,7 @@
     });
 
     $('#form').submit(function () {
-        let username = $('#field').val();
+        username = $('#field').val();
         postUser(username, function f(response) {
             console.log(response);
 
@@ -72,7 +85,7 @@
 
     $('#playForm').submit(function () {
         let players = {
-            firstPlayerName: $('#label').val(),
+            firstPlayerName: $('#label').text(),
             secondPlayerName: $('#opname').val()
         };
         console.log(players);
