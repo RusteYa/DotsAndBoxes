@@ -30,7 +30,7 @@ dependencies:
 - filepath
 - text
 - network
-- uuid
+- tostring
 
 library:
   source-dirs: src

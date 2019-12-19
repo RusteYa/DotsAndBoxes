@@ -44,3 +44,25 @@ var postGame = function(body, onSuccess, onError)
     , type: 'POST'
     });
 }
+
+var postMove = function(body, onSuccess, onError)
+{
+  $.ajax(
+    { url: '/move'
+    , success: onSuccess
+    , data: JSON.stringify(body)
+    , contentType: 'application/json'
+    , error: onError
+    , type: 'POST'
+    });
+}
+
+var getMove = function(onSuccess, onError)
+{
+  $.ajax(
+    { url: '/move'
+    , success: onSuccess
+    , error: onError
+    , type: 'GET'
+    });
+}

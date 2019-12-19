@@ -29,6 +29,13 @@
     <button type="play">play</button>
 </form>
 
+<form id="moveForm">
+    <input name="x" id="x" type="number"/>
+    <input name="y" id="y" type="number"/>
+    <input name="direct" id="direct" type="text"/>
+    <button type="move">play</button>
+</form>
+
 <script src="jquery.min.js" type="text/javascript"></script>
 <script src="stateApi.js" type="text/javascript"></script>
 <script src="userApi.js" type="text/javascript"></script>
@@ -41,16 +48,27 @@
     //     }, 1000);
     // });
     var username = "";
+    var gamepk = "";
 
 
     $(document).ready(function () {
         window.setInterval(function () {
             if (username !== "") {
-                postGame(username, function f(response) {
-                    console.log(response);
-                    if (response.pk !== "#")
-                        $('#game').text(response);
-                }, alert);
+                if (gamepk !== "") {
+                    postGame(gamepk, function f(response) {
+                        console.log(username, gamepk, response);
+                        if (response.pk !== "#")
+                            $('#game').text(response.board);
+                    }, alert);
+                } else {
+                    postGame(username, function f(response) {
+                        console.log(username, gamepk, response);
+                        if (response.pk !== "#") {
+                            $('#game').text(response.board);
+                            gamepk = response.pk;
+                        }
+                    }, alert);
+                }
             }
         }, 1000);
     });
@@ -90,6 +108,23 @@
         };
         console.log(players);
         postPlay(players, function f(response) {
+            console.log(response);
+            $('#game').text(response);
+            gamepk = response.pk;
+        }, alert);
+        return false;
+    });
+
+
+    $('#moveForm').submit(function () {
+        let move = {
+            x: parseInt($('#x').val()),
+            y: parseInt($('#y').val()),
+            direct:  $('#direct').val(),
+            gamepk: gamepk
+        };
+        console.log(move);
+        postMove(move, function f(response) {
             console.log(response);
             $('#game').text(response);
         }, alert);
