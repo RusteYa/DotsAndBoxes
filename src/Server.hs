@@ -18,12 +18,12 @@ import           Data.Proxy
 import           Data.String.ToString
 import           Data.Text
 import           Debug.Trace
+import           Game.Logic
 import           GHC.Generics
 import           Network.Wai.Handler.Warp (run)
 import           Servant
 import           Servant.JS
 import           System.FilePath
-import           Game.Logic
 
 newtype UserPul =
   UserPul
@@ -35,7 +35,7 @@ data Players =
   Players
     { firstPlayerName  :: Text
     , secondPlayerName :: Text
-    , size :: Int
+    , size             :: Int
     }
   deriving (Generic, Show, Eq)
 
@@ -69,11 +69,11 @@ data Game =
   Game
     { pk           :: Text
     , board        :: Board
-    , boardS        :: String
+    , boardS       :: String
     , availables   :: [Edge]
     , firstPlayer  :: User
     , secondPlayer :: User
-    , playerTurn :: Int
+    , playerTurn   :: Int
     }
   deriving (Generic, Show, Eq)
 
@@ -115,7 +115,16 @@ newUser :: IO (TVar User)
 newUser = newTVarIO User {name = "username"}
 
 newGame :: Game
-newGame = Game {pk = "#", board = buildBoard 1 1, availables = buildAvailables 1 1, firstPlayer = User {name = ""}, secondPlayer = User {name = ""}, playerTurn=1, boardS=""}
+newGame =
+  Game
+    { pk = "#"
+    , board = buildBoard 1 1
+    , availables = buildAvailables 1 1
+    , firstPlayer = User {name = ""}
+    , secondPlayer = User {name = ""}
+    , playerTurn = 1
+    , boardS = ""
+    }
 
 updateState :: MonadIO m => TVar State -> m State
 updateState state =
@@ -135,7 +144,8 @@ updateUser userPul gamePul username =
     return newUserPul
 
 initGameTwise :: Int -> User -> User -> Game
-initGameTwise n u1 u2 = Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1, boardS=""}
+initGameTwise n u1 u2 =
+  Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1, boardS = ""}
   where
     p = name u2
     b = buildBoard n n
@@ -179,9 +189,18 @@ move gamePul mv =
     let edge = normalizeEdge [x mv, y mv] (direct mv)
     let newBoard = updateBoard (board oldGame) edge (playerTurn oldGame)
     let newAvailableEdges = deleteAvailable edge (availables oldGame)
-    let newPlayerTurn = if snd newBoard then playerTurn oldGame else changePlayer (playerTurn oldGame)
+    let newPlayerTurn =
+          if snd newBoard
+            then playerTurn oldGame
+            else changePlayer (playerTurn oldGame)
     let newGames = Data.List.delete oldGame (games oldGamePul)
-    let newGame = oldGame {board = fst newBoard, availables = newAvailableEdges, playerTurn = newPlayerTurn, boardS = boardToString (fst newBoard)}
+    let newGame =
+          oldGame
+            { board = fst newBoard
+            , availables = newAvailableEdges
+            , playerTurn = newPlayerTurn
+            , boardS = boardToString (fst newBoard)
+            }
     let newGamePul = GamePul {games = newGame : newGames}
     writeTVar gamePul newGamePul
     return newGame
@@ -193,10 +212,11 @@ currentUser :: MonadIO m => TVar UserPul -> TVar GamePul -> m UserPul
 currentUser userPul gamePul = liftIO $ readTVarIO userPul
 
 currentBoard :: MonadIO m => TVar GamePul -> m Board
-currentBoard gamePul = liftIO . atomically $ do
-  oldGamePul <- readTVar gamePul
-  let game = fromJust (Data.List.find (\e -> pk e == "rustem") (games oldGamePul))
-  return (board game)
+currentBoard gamePul =
+  liftIO . atomically $ do
+    oldGamePul <- readTVar gamePul
+    let game = fromJust (Data.List.find (\e -> pk e == "rustem") (games oldGamePul))
+    return (board game)
 
 type StateApi = "state" :> Post '[ JSON] State :<|> "state" :> Get '[ JSON] State
 
@@ -228,7 +248,8 @@ stateServer state = updateState state :<|> currentState state
 userServer :: TVar UserPul -> TVar GamePul -> Server UserApi
 userServer userPul gamePul =
   updateUser userPul gamePul :<|> currentUser userPul gamePul :<|> play userPul gamePul :<|> game gamePul :<|>
-  move gamePul :<|> currentBoard gamePul
+  move gamePul :<|>
+  currentBoard gamePul
 
 server :: TVar State -> TVar UserPul -> TVar GamePul -> Server ServerApi
 server state userPul gamePul =
