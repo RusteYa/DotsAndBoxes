@@ -71,7 +71,6 @@
 
     var username = "";
     var gamepk = "";
-    var size = 0;
 
     $(document).ready(function () {
         window.setInterval(function () {
@@ -80,9 +79,19 @@
                     postGame(gamepk, function f(response) {
                         console.log(username, gamepk, response);
                         if (response.pk !== "#") {
-                            //var bs = response.boardS.split("*").join("X")
                             var bs = response.boardS;
                             $('#game').text(bs);
+
+                            if(response.firstPlayer.name == username && response.playerTurn == 2){
+                                document.getElementById('moveConsole').style.display= "none";
+                            }else if(response.firstPlayer.name == username && response.playerTurn == 1){
+                                document.getElementById('moveConsole').style.display= "inline";
+                            }else if(response.secondPlayer.name == username && response.playerTurn == 1){
+                                document.getElementById('moveConsole').style.display= "none";
+                            }else if(response.secondPlayer.name == username && response.playerTurn == 2){
+                                document.getElementById('moveConsole').style.display= "inline";
+                            }
+
                         }
                     }, alert);
                 } else {
@@ -93,7 +102,7 @@
                             gamepk = response.pk;
                             document.getElementById('enemyList').style.display="none";
                             document.getElementById('moveConsole').style.display= "inline";
-//                            be careful here
+//  be careful here
                         }
                     }, alert);
                 }
@@ -125,14 +134,12 @@
             secondPlayerName: $('#opname').val(),
             size: parseInt($('#size').val())
         };
-        size=$('#size').val();
         console.log(players);
         postPlay(players, function f(response) {
             console.log(response);
             $('#game').text(response);
             gamepk = response.pk;
             document.getElementById('enemyList').style.display= "none";
-            document.getElementById('moveConsole').style.display= "inline";
         }, alert);
         return false;
     });
