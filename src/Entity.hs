@@ -13,7 +13,6 @@ import           Data.Proxy
 import           Data.String.ToString
 import           Data.Text
 import           Debug.Trace
-import           Entity
 import           Game.Logic
 import           GHC.Generics
 import           Network.Wai.Handler.Warp (run)
