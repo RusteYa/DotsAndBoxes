@@ -69,6 +69,7 @@ data Game =
   Game
     { pk           :: Text
     , board        :: Board
+    , boardS        :: String
     , availables   :: [Edge]
     , firstPlayer  :: User
     , secondPlayer :: User
@@ -114,7 +115,7 @@ newUser :: IO (TVar User)
 newUser = newTVarIO User {name = "username"}
 
 newGame :: Game
-newGame = Game {pk = "#", board = buildBoard 1 1, availables = buildAvailables 1 1, firstPlayer = User {name = ""}, secondPlayer = User {name = ""}, playerTurn=1}
+newGame = Game {pk = "#", board = buildBoard 1 1, availables = buildAvailables 1 1, firstPlayer = User {name = ""}, secondPlayer = User {name = ""}, playerTurn=1, boardS=""}
 
 updateState :: MonadIO m => TVar State -> m State
 updateState state =
@@ -134,7 +135,7 @@ updateUser userPul gamePul username =
     return newUserPul
 
 initGameTwise :: Int -> User -> User -> Game
-initGameTwise n u1 u2 = Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1}
+initGameTwise n u1 u2 = Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1, boardS=""}
   where
     p = name u2
     b = buildBoard n n
@@ -180,7 +181,7 @@ move gamePul mv =
     let newAvailableEdges = deleteAvailable edge (availables oldGame)
     let newPlayerTurn = if snd newBoard then playerTurn oldGame else changePlayer (playerTurn oldGame)
     let newGames = Data.List.delete oldGame (games oldGamePul)
-    let newGame = oldGame {board = fst newBoard, availables = newAvailableEdges, playerTurn = newPlayerTurn}
+    let newGame = oldGame {board = fst newBoard, availables = newAvailableEdges, playerTurn = newPlayerTurn, boardS = boardToString (fst newBoard)}
     let newGamePul = GamePul {games = newGame : newGames}
     writeTVar gamePul newGamePul
     return newGame

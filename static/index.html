@@ -36,6 +36,7 @@
 
     <form id="playForm">
     <input placeholder="rival name..." name="opname" id="opname" type="text"/>
+    <input placeholder="size..." name="size" id="size" type="number"/>
     <button type="play">play</button>
     </form>
 
@@ -115,7 +116,8 @@
     $('#playForm').submit(function () {
         let players = {
             firstPlayerName: $('#label').text(),
-            secondPlayerName: $('#opname').val()
+            secondPlayerName: $('#opname').val(),
+            size: parseInt($('#size').val())
         };
         console.log(players);
         postPlay(players, function f(response) {

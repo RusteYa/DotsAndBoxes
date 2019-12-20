@@ -32,6 +32,9 @@ dependencies:
 - network
 - tostring
 - random
+- hspec
+- tasty
+- tasty-hunit
 
 library:
   source-dirs: src
