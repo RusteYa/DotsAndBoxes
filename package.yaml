@@ -21,7 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && <5 
-- servant-server 
+- servant-server
+- servant-client
 - servant-js
 - aeson 
 - wai 
@@ -35,6 +36,9 @@ dependencies:
 - hspec
 - tasty
 - tasty-hunit
+- QuickCheck
+- servant-quickcheck
+- hspec
 
 library:
   source-dirs: src

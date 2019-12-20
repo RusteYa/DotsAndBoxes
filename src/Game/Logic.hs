@@ -21,14 +21,20 @@ type Box = ([Edge], Int)
 type Board = [[Box]]
 
 
+newPoint :: (Int, Int) -> Point
+newPoint (x, y) = (x, y)
+
+newEdge :: (Point, Point) -> Edge
+newEdge (p1, p2) = (p1, p2)
+
 -- логика игры
 
 changePlayer :: Int -> Int
 changePlayer 1 = 2
 changePlayer 2 = 1
 
-changeStrategy :: (Board -> [Edge] -> IO Edge, Board -> [Edge] -> IO Edge) -> (Board -> [Edge] -> IO Edge, Board -> [Edge] -> IO Edge)
-changeStrategy (s1,s2) = (s2,s1)
+--changeStrategy :: (Board -> [Edge] -> IO Edge, Board -> [Edge] -> IO Edge) -> (Board -> [Edge] -> IO Edge, Board -> [Edge] -> IO Edge)
+--changeStrategy (s1,s2) = (s2,s1)
 
 normalizeEdge :: [String] -> String -> Edge
 normalizeEdge [c1,c2] d
@@ -37,6 +43,8 @@ normalizeEdge [c1,c2] d
   | otherwise = ((x,y),(x,y))
     where x = read c1 :: Int
           y = read c2 :: Int
+
+
 
 
 -- обновление доски
