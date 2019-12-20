@@ -42,7 +42,7 @@
 
 </div>
 
-<label id="game" for="opname"></label>
+<textarea disabled style="size: 300px;"  id="game" for="opname"></textarea>
 
 <br><br><br>
 
@@ -68,22 +68,28 @@
     //         getState(updateState, alert);
     //     }, 1000);
     // });
+
     var username = "";
     var gamepk = "";
+    var size = 0;
+
     $(document).ready(function () {
         window.setInterval(function () {
             if (username !== "") {
                 if (gamepk !== "") {
                     postGame(gamepk, function f(response) {
                         console.log(username, gamepk, response);
-                        if (response.pk !== "#")
-                            $('#game').text(response.board);
+                        if (response.pk !== "#") {
+                            //var bs = response.boardS.split("*").join("X")
+                            var bs = response.boardS;
+                            $('#game').text(bs);
+                        }
                     }, alert);
                 } else {
                     postGame(username, function f(response) {
                         console.log(username, gamepk, response);
                         if (response.pk !== "#") {
-                            $('#game').text(response.board);
+                            $('#game').text(response.boardS);
                             gamepk = response.pk;
                             document.getElementById('enemyList').style.display="none";
                             document.getElementById('moveConsole').style.display= "inline";
@@ -119,6 +125,7 @@
             secondPlayerName: $('#opname').val(),
             size: parseInt($('#size').val())
         };
+        size=$('#size').val();
         console.log(players);
         postPlay(players, function f(response) {
             console.log(response);
