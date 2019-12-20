@@ -1,8 +1,6 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Server
   ( webAppEntry
@@ -18,35 +16,13 @@ import           Data.Proxy
 import           Data.String.ToString
 import           Data.Text
 import           Debug.Trace
+import           Entity
 import           Game.Logic
 import           GHC.Generics
 import           Network.Wai.Handler.Warp (run)
 import           Servant
 import           Servant.JS
 import           System.FilePath
-
-newtype UserPul =
-  UserPul
-    { users :: [User]
-    }
-  deriving (Show, Generic)
-
-data Players =
-  Players
-    { firstPlayerName  :: Text
-    , secondPlayerName :: Text
-    , size             :: Int
-    }
-  deriving (Generic, Show, Eq)
-
-data Move =
-  Move
-    { x      :: String
-    , y      :: String
-    , direct :: String
-    , gamepk :: Text
-    }
-  deriving (Generic, Show, Eq)
 
 instance ToJSON Move
 
@@ -62,45 +38,9 @@ instance ToJSON Players
 
 instance FromJSON Players
 
-newUserPul :: IO (TVar UserPul)
-newUserPul = newTVarIO UserPul {users = []}
-
-data Game =
-  Game
-    { pk           :: Text
-    , board        :: Board
-    , boardS       :: String
-    , availables   :: [Edge]
-    , firstPlayer  :: User
-    , secondPlayer :: User
-    , playerTurn   :: Int
-    }
-  deriving (Generic, Show, Eq)
-
 instance ToJSON Game
 
 instance FromJSON Game
-
-newtype GamePul =
-  GamePul
-    { games :: [Game]
-    }
-  deriving (Show, Generic)
-
-newGamePul :: IO (TVar GamePul)
-newGamePul = newTVarIO GamePul {games = []}
-
-newtype State =
-  State
-    { value :: Int
-    }
-  deriving (Generic, Show, Num)
-
-newtype User =
-  User
-    { name :: Text
-    }
-  deriving (Generic, Show, Eq)
 
 instance ToJSON State
 
@@ -113,6 +53,12 @@ newState = newTVarIO 0
 
 newUser :: IO (TVar User)
 newUser = newTVarIO User {name = "username"}
+
+newGamePul :: IO (TVar GamePul)
+newGamePul = newTVarIO GamePul {games = []}
+
+newUserPul :: IO (TVar UserPul)
+newUserPul = newTVarIO UserPul {users = []}
 
 newGame :: Game
 newGame =
@@ -134,6 +80,7 @@ updateState state =
     writeTVar state newState
     return newState
 
+-- создаем нового пользвоателя и добавляем в список
 updateUser :: MonadIO m => TVar UserPul -> TVar GamePul -> Text -> m UserPul
 updateUser userPul gamePul username =
   liftIO . atomically $ do
@@ -143,6 +90,7 @@ updateUser userPul gamePul username =
     writeTVar userPul newUserPul
     return newUserPul
 
+-- инициализируем игру
 initGameTwise :: Int -> User -> User -> Game
 initGameTwise n u1 u2 =
   Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1, boardS = ""}
@@ -151,6 +99,7 @@ initGameTwise n u1 u2 =
     b = buildBoard n n
     a = buildAvailables n n
 
+-- хандлер для начала игры между 2 игроками
 play :: MonadIO m => TVar UserPul -> TVar GamePul -> Players -> m Game
 play userPul gamePul players =
   traceShow ("play") liftIO . atomically $ do
@@ -174,6 +123,7 @@ play userPul gamePul players =
     writeTVar userPul newUserPul
     return g
 
+-- возвращаем игру по id
 game :: MonadIO m => TVar GamePul -> Text -> m Game
 game gamePul username =
   traceShow "game" liftIO . atomically $ do
@@ -181,6 +131,7 @@ game gamePul username =
     let g = Data.List.find (\e -> pk e == username) (games oldGamePul)
     maybe (return newGame) return g
 
+-- хандлер обработки хода игрока
 move :: MonadIO m => TVar GamePul -> Move -> m Game
 move gamePul mv =
   traceShow "move" liftIO . atomically $ do
@@ -208,9 +159,11 @@ move gamePul mv =
 currentState :: MonadIO m => TVar State -> m State
 currentState state = liftIO $ readTVarIO state
 
+-- вывод списка ползователей
 currentUser :: MonadIO m => TVar UserPul -> TVar GamePul -> m UserPul
 currentUser userPul gamePul = liftIO $ readTVarIO userPul
 
+-- вывод доски
 currentBoard :: MonadIO m => TVar GamePul -> m Board
 currentBoard gamePul =
   liftIO . atomically $ do
@@ -221,12 +174,7 @@ currentBoard gamePul =
 type StateApi = "state" :> Post '[ JSON] State :<|> "state" :> Get '[ JSON] State
 
 type UserApi
-   = "user" :> ReqBody '[ JSON] Text :> Post '[ JSON] UserPul
-   :<|> "user" :> Get '[ JSON] UserPul
-   :<|> "play" :> ReqBody '[ JSON] Players :> Post '[ JSON] Game
-   :<|> "game" :> ReqBody '[ JSON] Text :> Post '[ JSON] Game
-   :<|> "move" :> ReqBody '[ JSON] Move :> Post '[ JSON] Game
-   :<|> "board" :> Get '[ JSON] Board
+   = "user" :> ReqBody '[ JSON] Text :> Post '[ JSON] UserPul :<|> "user" :> Get '[ JSON] UserPul :<|> "play" :> ReqBody '[ JSON] Players :> Post '[ JSON] Game :<|> "game" :> ReqBody '[ JSON] Text :> Post '[ JSON] Game :<|> "move" :> ReqBody '[ JSON] Move :> Post '[ JSON] Game :<|> "board" :> Get '[ JSON] Board
 
 type ServerApi = StateApi :<|> UserApi :<|> Raw
 
