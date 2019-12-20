@@ -129,8 +129,8 @@
     });
     $('#moveForm').submit(function () {
         let move = {
-            x: parseInt($('#x').val()),
-            y: parseInt($('#y').val()),
+            x: $('#x').val(),
+            y: $('#y').val(),
             direct:  $('#direct').val(),
             gamepk: gamepk
         };

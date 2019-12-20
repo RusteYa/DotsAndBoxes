@@ -22,8 +22,8 @@ import           GHC.Generics
 import           Network.Wai.Handler.Warp (run)
 import           Servant
 import           Servant.JS
-import qualified Servant.JS               as SJS
 import           System.FilePath
+import           Game.Logic
 
 newtype UserPul =
   UserPul
@@ -40,9 +40,9 @@ data Players =
 
 data Move =
   Move
-    { x      :: Int
-    , y      :: Int
-    , direct :: Text
+    { x      :: String
+    , y      :: String
+    , direct :: String
     , gamepk :: Text
     }
   deriving (Generic, Show, Eq)
@@ -67,9 +67,11 @@ newUserPul = newTVarIO UserPul {users = []}
 data Game =
   Game
     { pk           :: Text
-    , board        :: Text
+    , board        :: Board
+    , availables   :: [Edge]
     , firstPlayer  :: User
     , secondPlayer :: User
+    , playerTurn :: Int
     }
   deriving (Generic, Show, Eq)
 
@@ -110,6 +112,9 @@ newState = newTVarIO 0
 newUser :: IO (TVar User)
 newUser = newTVarIO User {name = "username"}
 
+newGame :: Game
+newGame = Game {pk = "#", board = buildBoard 1 1, availables = buildAvailables 1 1, firstPlayer = User {name = ""}, secondPlayer = User {name = ""}, playerTurn=1}
+
 updateState :: MonadIO m => TVar State -> m State
 updateState state =
   liftIO . atomically $ do
@@ -127,15 +132,17 @@ updateUser userPul gamePul username =
     writeTVar userPul newUserPul
     return newUserPul
 
-initGameTwise :: User -> User -> Game
-initGameTwise u1 u2 = Game {pk = p, board = b, firstPlayer = u1, secondPlayer = u2}
+initGameTwise :: Int -> User -> User -> Game
+initGameTwise n u1 u2 = Game {pk = p, board = b, availables = a, firstPlayer = u1, secondPlayer = u2, playerTurn = 1}
   where
     p = name u2
-    b = "board"
+    b = buildBoard n n
+    a = buildAvailables n n
 
 play :: MonadIO m => TVar UserPul -> TVar GamePul -> Players -> m Game
 play userPul gamePul players =
   traceShow ("play") liftIO . atomically $ do
+    let n = 2
     oldUserPul <- readTVar userPul
     let u1 =
           traceShow
@@ -148,7 +155,7 @@ play userPul gamePul players =
             fromJust
             (Data.List.find (\e -> name e == secondPlayerName players) (users oldUserPul))
     oldGamePul <- readTVar gamePul
-    let g = initGameTwise u1 u2
+    let g = initGameTwise n u1 u2
     writeTVar gamePul GamePul {games = g : games oldGamePul}
     let newUsers = traceShow ("play", u1, u2, g) Data.List.delete u2 (Data.List.delete u1 (users oldUserPul))
     let newUserPul = UserPul {users = newUsers}
@@ -160,31 +167,22 @@ game gamePul username =
   traceShow "game" liftIO . atomically $ do
     oldGamePul <- readTVar gamePul
     let g = Data.List.find (\e -> pk e == username) (games oldGamePul)
-    maybe (return Game {pk = "#", board = "", firstPlayer = User {name = ""}, secondPlayer = User {name = ""}}) return g
+    maybe (return newGame) return g
 
 move :: MonadIO m => TVar GamePul -> Move -> m Game
 move gamePul mv =
   traceShow "move" liftIO . atomically $ do
     oldGamePul <- readTVar gamePul
-    let g = fromJust (Data.List.find (\e -> pk e == gamepk mv) (games oldGamePul))
-    let newg = g {board = pack (show (x mv) ++ show (y mv) ++ unpack (direct mv))}
-    let newGames = Data.List.delete g (games oldGamePul)
-    let newGamePul = GamePul {games = newg : newGames}
+    let oldGame = fromJust (Data.List.find (\e -> pk e == gamepk mv) (games oldGamePul))
+    let edge = normalizeEdge [x mv, y mv] (direct mv)
+    let newBoard = updateBoard (board oldGame) edge (playerTurn oldGame)
+    let newAvailableEdges = deleteAvailable edge (availables oldGame)
+    let newPlayerTurn = if snd newBoard then playerTurn oldGame else changePlayer (playerTurn oldGame)
+    let newGames = Data.List.delete oldGame (games oldGamePul)
+    let newGame = oldGame {board = fst newBoard, availables = newAvailableEdges, playerTurn = newPlayerTurn}
+    let newGamePul = GamePul {games = newGame : newGames}
     writeTVar gamePul newGamePul
-    return newg
-
---
---
---move :: MonadIO m => TVar GamePul -> Text -> Move -> m Game
---move gamePul username mv =
---  traceShow "move" liftIO . atomically $ do
---    oldGamePul <- readTVar gamePul
---    let g = Data.List.find (\e -> pk e == username) (games oldGamePul)
---    let newg = g { board = Data.Text.pack (Data.String.ToString.toString mv)}
---    let newGames = Data.List.delete g (games oldGamePul)
---    let newGamePul = UserPul {users = newg : newGames}
---    writeTVar gamePul newGamePul
---    maybe (return Game {pk = "#", board = "", firstPlayer = User {name = ""}, secondPlayer = User {name = ""}}) return newg
+    return newGame
 
 currentState :: MonadIO m => TVar State -> m State
 currentState state = liftIO $ readTVarIO state
@@ -192,8 +190,11 @@ currentState state = liftIO $ readTVarIO state
 currentUser :: MonadIO m => TVar UserPul -> TVar GamePul -> m UserPul
 currentUser userPul gamePul = liftIO $ readTVarIO userPul
 
-currentMove :: Handler Move
-currentMove = return Move { x=1, y=1, direct="v", gamepk="rustem"}
+currentBoard :: MonadIO m => TVar GamePul -> m Board
+currentBoard gamePul = liftIO . atomically $ do
+  oldGamePul <- readTVar gamePul
+  let game = fromJust (Data.List.find (\e -> pk e == "rustem") (games oldGamePul))
+  return (board game)
 
 type StateApi = "state" :> Post '[ JSON] State :<|> "state" :> Get '[ JSON] State
 
@@ -203,7 +204,7 @@ type UserApi
    :<|> "play" :> ReqBody '[ JSON] Players :> Post '[ JSON] Game
    :<|> "game" :> ReqBody '[ JSON] Text :> Post '[ JSON] Game
    :<|> "move" :> ReqBody '[ JSON] Move :> Post '[ JSON] Game
-   :<|> "move" :> Get '[ JSON] Move
+   :<|> "board" :> Get '[ JSON] Board
 
 type ServerApi = StateApi :<|> UserApi :<|> Raw
 
@@ -225,7 +226,7 @@ stateServer state = updateState state :<|> currentState state
 userServer :: TVar UserPul -> TVar GamePul -> Server UserApi
 userServer userPul gamePul =
   updateUser userPul gamePul :<|> currentUser userPul gamePul :<|> play userPul gamePul :<|> game gamePul :<|>
-  move gamePul :<|> currentMove
+  move gamePul :<|> currentBoard gamePul
 
 server :: TVar State -> TVar UserPul -> TVar GamePul -> Server ServerApi
 server state userPul gamePul =

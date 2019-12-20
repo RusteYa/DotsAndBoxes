@@ -57,10 +57,10 @@ var postMove = function(body, onSuccess, onError)
     });
 }
 
-var getMove = function(onSuccess, onError)
+var getBoard = function(onSuccess, onError)
 {
   $.ajax(
-    { url: '/move'
+    { url: '/board'
     , success: onSuccess
     , error: onError
     , type: 'GET'
