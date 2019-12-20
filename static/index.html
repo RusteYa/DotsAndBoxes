@@ -12,6 +12,7 @@
         }
     </style>
 </head>
+
 <html>
 <label id="un" style="display: none">Your name is -</label>
 <strong><label id="label" for="field"></label></strong>
@@ -69,8 +70,13 @@
     //     }, 1000);
     // });
 
+
+    //Необходимые переменные
+
     var username = "";
     var gamepk = "";
+
+    //Функция, отслеживающая изменения на сервере | Game Cycle
 
     $(document).ready(function () {
         window.setInterval(function () {
@@ -79,8 +85,13 @@
                     postGame(gamepk, function f(response) {
                         console.log(username, gamepk, response);
                         if (response.pk !== "#") {
+
+                            //отображение поля
+
                             var bs = response.boardS;
                             $('#game').text(bs);
+
+                            // блокировка хода для соответствующего игрока
 
                             if(response.firstPlayer.name == username && response.playerTurn == 2){
                                 document.getElementById('moveConsole').style.display= "none";
@@ -100,6 +111,9 @@
                         if (response.pk !== "#") {
                             $('#game').text(response.boardS);
                             gamepk = response.pk;
+
+                            //скрытие списка соперников перед началом игры
+
                             document.getElementById('enemyList').style.display="none";
                             document.getElementById('moveConsole').style.display= "inline";
 //  be careful here
@@ -110,6 +124,8 @@
         }, 1000);
     });
 
+    // представление в лобби
+
     $('#form').submit(function () {
         username = $('#field').val();
         postUser(username, function f(response) {
@@ -117,10 +133,16 @@
             var list = '';
             var arr = response.users;
             arr.forEach(function(item) {
+
+                //список игроков в лобби
+
                 if (item.name !== username) {
                     list += '<li>' + item.name + '</li>';
                 }
             });
+
+            //скрытие формы представления
+
             document.getElementById('enterName').style.display= "none";
             document.getElementById('un').style.display= "inline";
             document.getElementById('users').innerHTML += '<ul>' + list + '</ul>';
@@ -128,6 +150,9 @@
         }, alert);
         return false;
     });
+
+    // запрос на начало игры
+
     $('#playForm').submit(function () {
         let players = {
             firstPlayerName: $('#label').text(),
@@ -143,6 +168,10 @@
         }, alert);
         return false;
     });
+
+
+    // соверешение хода в игре
+
     $('#moveForm').submit(function () {
         let move = {
             x: $('#x').val(),
