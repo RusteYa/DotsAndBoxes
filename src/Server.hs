@@ -35,6 +35,7 @@ data Players =
   Players
     { firstPlayerName  :: Text
     , secondPlayerName :: Text
+    , size :: Int
     }
   deriving (Generic, Show, Eq)
 
@@ -142,7 +143,7 @@ initGameTwise n u1 u2 = Game {pk = p, board = b, availables = a, firstPlayer = u
 play :: MonadIO m => TVar UserPul -> TVar GamePul -> Players -> m Game
 play userPul gamePul players =
   traceShow ("play") liftIO . atomically $ do
-    let n = 2
+    let n = size players
     oldUserPul <- readTVar userPul
     let u1 =
           traceShow
